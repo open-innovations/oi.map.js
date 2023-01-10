@@ -1,6 +1,6 @@
 # oi.map.js
 
-A very basic, lightweight, slippy map.
+A very basic, lightweight (12kB), slippy map.
 
 We regularly use the excellent [Leaflet](https://leafletjs.com/) to create interactive maps on our websites. It is incredibly powerful. However, for some of our use cases, the Javascript file is the largest single resource. We wanted to be able to get a basic interactive map for as little bandwidth use as we could - and so this library was created.
 
@@ -57,7 +57,7 @@ map.panBy({'x':5,'y':10},{'animate':true,'duration':1});
 
 ## Plugins
 
-There is currently one 'plugin' - oi.map.overlay.js - that adds the ability to display GeoJSON layers on the map with some basic styling. The way of calling the code is designed to be as similar to Leaflet's as we could get it (but not quite identical) so that it is relatively easy to switch to Leaflet if the requirements for a particular web map increase.
+There is currently one 'plugin' - oi.map.overlay.js (11kB) - that adds the ability to display GeoJSON layers on the map with some basic styling. The way of calling the code is designed to be as similar to Leaflet's as we could get it (but not quite identical) so that it is relatively easy to switch to Leaflet if the requirements for a particular web map increase.
 
 ```javascript
 var geojson = {'type':'Feature','properties':{},'geometry':{'coordinates':[-1.7,53.5],'type':'Point'}};
