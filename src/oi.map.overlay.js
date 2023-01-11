@@ -1,8 +1,10 @@
 /**
   OI Leeds Tiny Slippy Map
   Plugin for overlays (e.g. GeoJSON)
-  Version 0.1.5
+  Version 0.1.6
   Changelog:
+  - 0.1.6:
+    - Custom icons for markers
   - 0.1.5:
     - Add getBounds() to GeoJSON layer
 **/
@@ -145,8 +147,11 @@
 
 						m.panes.p[p].el.appendChild(this._el);
 						m.panes.p[p].layers.push(this);
+						
 						// Update the view
-						this.update(this._map.getBounds(),this._map.getZoom());
+						if(this._json.features.length > 0){
+							this.update(this._map.getBounds(),this._map.getZoom());
+						}
 					}
 					getBounds(m){
 						var f,g,c,b,lat,lon,geometry,i,j,k;
@@ -180,10 +185,12 @@
 								}
 							}
 						}
-						return this._map.Bounds(this._map.LatLon(lat.max,lon.max),this._map.LatLon(lat.min,lon.min));
+						// Return a null if the range hasn't changed
+						if(lat.max==-90 && lat.min==90 && lon.max==-180 && lon.min==180) return null;
+						else return this._map.Bounds(this._map.LatLon(lat.max,lon.max),this._map.LatLon(lat.min,lon.min));
 					}
 					update(bounds,z){
-						var offset,f,xy,nw,se,el,c,i,j,k,d,props,style,defaults,attr,g,offs;
+						var offset,f,xy,nw,se,el,c,i,j,k,d,props,style,defaults,attr,g,offs,icon,iconsvg;
 						// Get tile x/y of centre
 						offset = bounds.getCenter().toPx(z);
 						nw = bounds.nw.toPx(z);
@@ -195,7 +202,6 @@
 							style = {};
 							if(typeof this._attr.style==="function") style = this._attr.style.call(this,this._json.features[f])||{};
 							else if(typeof this._attr.style==="object") style = this._attr.style;
-
 							// Extend
 							props = Object.assign({}, defaults, style);
 
@@ -206,7 +212,20 @@
 								offs = (xy.x-offset.x)+' '+(xy.y-offset.y);
 								if(!this._json.features[f]._svg){
 									el = svgEl('g');
-									el.innerHTML = '<path d="M 0 0 L -10.84,-22.86 A 12 12 1 1 1 10.84,-22.86 L 0,0 z" fill="'+props.color+'" fill-opacity="1"></path><ellipse cx="0" cy="-27.5" rx="4" ry="4" fill="white"></ellipse>';
+									if(this._attr.divIcon){
+										if(typeof this._attr.divIcon.html==="string") icon = this._attr.divIcon.html;
+										else if(typeof this._attr.divIcon.html==="function") icon = this._attr.divIcon.html.call(this,this._json.features[f]);
+									}
+									if(!icon || typeof icon==="null" || icon==null) icon = '<svg><path d="M 0 0 L -10.84,-22.86 A 12 12 1 1 1 10.84,-22.86 L 0,0 z" fill="currentColor" fill-opacity="1"></path><ellipse cx="0" cy="-27.5" rx="4" ry="4" fill="white"></ellipse></svg>';
+									icon = icon.replace(/fill="currentColor"/g,"fill=\""+(props.fillColor||"black")+"\"")
+									el.innerHTML = icon;
+									iconsvg = el.querySelector('svg');
+									if(iconsvg){
+										iconsvg.setAttribute("overflow","visible");
+										iconsvg.style.transform = "translate3d(-"+(parseFloat(iconsvg.getAttribute('width'))/2)+"px,-"+(parseFloat(iconsvg.getAttribute('height')))+"px,0)";
+									}else{
+										console.log(this._map.log('WARNING','No <svg> in icon',iconsvg));
+									}
 									this._svg.appendChild(el);
 									this._json.features[f]._svg = el;
 								}

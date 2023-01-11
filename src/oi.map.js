@@ -50,6 +50,7 @@
 		if(!attr.center) attr.center = [0,0];
 		if(typeof attr.maxZoom!=="number") attr.maxZoom = 19;
 		if(typeof attr.minZoom!=="number") attr.minZoom = 3;
+		if(typeof attr.zoom!=="number") attr.zoom = 12;
 		if(typeof attr.scrollWheelZoom!=="boolean") attr.scrollWheelZoom = true;
 		if(typeof attr.zoomControl!=="boolean") attr.zoomControl = true;
 		if(typeof attr.attributionControl!=="boolean") attr.attributionControl = true;
@@ -148,7 +149,7 @@
 		center = LatLon(attr.center[0],attr.center[1]);
 
 		// Set the default zoom level
-		this.setZoom(attr.zoom||12,true);
+		this.setZoom(attr.zoom,true);
 
 		// Add style to map
 		el.classList.add('oi-map');

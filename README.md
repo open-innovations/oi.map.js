@@ -15,7 +15,14 @@ var map = new OI.map(<DOM>,{
 });
 ```
 
-where `<DOM>` is the DOM element to attach the map to.
+where `<DOM>` is the DOM element to attach the map to. Options include:
+
+* `center` - a two element array giving the latitude and longitude of the map centre
+* `minZoom` - minimum zoom
+* `maxZoom` - maximum zoom
+* `zoomControl` - show/hide the zoom control
+* `attributionControl` - show/hide the attribution control
+* `scrollWheelZoom` - can control the map with the scroll wheel?
 
 You can then add a tile layer using e.g.
 
