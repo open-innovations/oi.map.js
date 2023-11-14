@@ -1,11 +1,15 @@
 /**
   OI Leeds Tiny Slippy Map
-  Version 0.1.8
+  Version 0.1.9
   
   Changelog:
+  0.1.9:
+    - Stop zoom buttons propagating events
+    - Add events with .on()
+    - Add .setCenter() function to centre the map
   0.1.8:
     - Limit to minZoom/maxZoom set in tile tile layers
-	- Add getBounds() to Layer
+	- Add .getBounds() to Layer
 **/
 // jshint esversion: 6
 (function(root){
@@ -25,7 +29,8 @@
 
 	function Map(el,attr){
 		var title = "OI Map";
-		this.version = "0.1.7";
+		var events = {};
+		this.version = "0.1.9";
 		this.logging = (location.search.indexOf('debug=true') >= 0);
 		this.log = function(){
 			// Version 1.2
@@ -67,9 +72,10 @@
 			}
 			return this;
 		};
-		this.updateLayers = function(bounds,zoom){
+		this.updateLayers = function(b,zoom){
 			if(typeof zoom!=="number") zoom = this.getZoom();
-			if(!bounds) bounds = this.getBounds();
+			if(!b) b = this.getBounds();
+			bounds = b;
 			var p,l,pos,a,attr;
 			pos = {x:0,y:0};
 			attr = '';
@@ -85,10 +91,13 @@
 				}
 			}
 			if(this.controls.credit) this.controls.credit.innerHTML = attr+(attr?' | ':'')+title;
+			this.trigger({'type':'updated'});
 			return this;
 		};
 		this.getZoom = function(){ return zoom; };
 		this.setZoom = function(z,noupdate){
+
+			// Limit zoom to the maximum allowed by the tile layers
 			var minZoom = attr.minZoom;
 			var maxZoom = attr.maxZoom;
 			if(this.panes.p.tile){
@@ -112,9 +121,29 @@
 			tile = center.toTile(zoom);
 			return Bounds(Tile(tile.x-dx,tile.y+dy).toLatLon(zoom),Tile(tile.x+dx,tile.y-dy).toLatLon(zoom));
 		};
+		function MaxBounds(_obj){
+			var bnd,l;
+			var b = {'se': {'lon':180,'lat':-90},'nw':{'lon':-180,'lat':90}};
+			if(_obj.panes.p.tile){
+				for(l in _obj.panes.p.tile.layers){
+					if(_obj.panes.p.tile.layers[l]._attr.bounds){
+						bnd = _obj.panes.p.tile.layers[l]._attr.bounds;
+						if(bnd.nw && bnd.se){
+							b.nw.lat = Math.min(b.nw.lat,bnd.nw.lat);
+							b.se.lat = Math.max(b.se.lat,bnd.se.lat);
+							b.nw.lon = Math.max(b.nw.lon,bnd.nw.lon);
+							b.se.lon = Math.min(b.se.lon,bnd.se.lon);
+						}
+					}
+				}
+			}
+			return b;
+		}
+		// e.g. fitBounds([[54.559322, -5.767822], [56.1210604, -3.021240]]);
+		// or fitBounds({'se': {'lon': -1.6142865,'lat': 53.8263603},'nw': {'lon': -1.6725412,'lat': 53.8580877}});
 		this.fitBounds = function(b){
 			var dy,dx,z,nw,se,dlat,dlon,tcen;
-			bounds = (!b) ? this.getBounds() : (b.nw ? b : Bounds({'lat':b[0][0],'lon':b[0][1]},{'lat':b[1][0],'lon':b[1][1]}));
+			bounds = (this, (!b) ? this.getBounds() : (b.nw ? b : Bounds({'lat':b[0][0],'lon':b[0][1]},{'lat':b[1][0],'lon':b[1][1]})));
 			center = bounds.getCenter();
 
 			dy = el.offsetHeight/(2*sz);
@@ -134,7 +163,11 @@
 		this.panBy = function(p,attr){
 			if(!attr) attr = {'animate':false,duration:0.25};
 			center = center.toTile(zoom).shift(p).toLatLon(zoom);
-			this.updateLayers();
+			return this.updateLayers();
+		};
+		this.setCenter = function(c){
+			center = LatLon(c[0],c[1]);
+			return this.updateLayers();
 		};
 		this.addControl = function(name,cls,html){
 			if(!this.controls[name]){
@@ -175,12 +208,16 @@
 		startdrag = {};
 		// Add events
 		this.trigger = function(e){
-			e.preventDefault();
-			e.stopPropagation();
+			if(typeof e.preventDefault==="function"){
+				e.preventDefault();
+				e.stopPropagation();
+			}
 			var ev = e.type;
+			var props = {};
 			if(ev=="pointerdown"){
 				drag = true;
 				startdrag = {x:e.pageX,y:e.pageY};
+				props.startdrag = startdrag;
 			}else if(ev=="pointerup"){
 				drag = false;
 			}else if((ev=="pointermove" || ev=="touchmove") && drag){
@@ -188,9 +225,15 @@
 				var delta = {x:startdrag.x - f.pageX,y:startdrag.y - f.pageY};
 				this.panBy(delta);
 				startdrag = {x:f.pageX,y:f.pageY};
+				props.startdrag = startdrag;
 			}else if(ev=="wheel" && attr.scrollWheelZoom){
 				e.wheel = e.deltaY ? -e.deltaY : e.wheelDelta/40;
 				this.setZoom(zoom+(e.wheel >= 0 ? 1 : -1));
+			}
+			if(events[ev]){
+				for(var i = 0; i < events[ev].length; i++){
+					if(typeof events[ev][i]==="function") events[ev][i].call(this,props);
+				}
 			}
 		};
 		addEvent('wheel',this.panes.el,{this:this,p:p},this.trigger);
@@ -199,6 +242,11 @@
 		if(('ontouchstart' in document.documentElement)) addEvent('touchmove',this.panes.el,{this:this,p:p},this.trigger);
 		else addEvent('pointermove',this.panes.el,{this:this,p:p},this.trigger);
 
+		this.on = function(typ,cb){
+			if(!events[typ]) events[typ] = new Array();
+			events[typ].push(cb);
+		}
+		
 		this.Layer = Layer;
 		this.Bounds = Bounds;
 		this.LatLon = LatLon;
@@ -260,6 +308,20 @@
 			return LatLon((180/PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n)))),(this.x/Math.pow(2,z)*360-180));
 		}
 		getTranslate(offset){ if(!offset) offset = {x:0,y:0}; return 'translate3d('+((this.x-offset.x)*sz)+'px,'+((this.y-offset.y)*sz)+'px,0)'; }
+	}
+	function LimitBounds(_obj,bounds){
+		var bnd,l,b;
+		b = Bounds(bounds.nw,bounds.se);
+		if(_obj._attr.bounds){
+			bnd = _obj._attr.bounds;
+			if(bnd.nw && bnd.se){
+				b.nw.lat = Math.min(b.nw.lat,bnd.nw.lat);
+				b.se.lat = Math.max(b.se.lat,bnd.se.lat);
+				b.nw.lon = Math.max(b.nw.lon,bnd.nw.lon);
+				b.se.lon = Math.min(b.se.lon,bnd.se.lon);
+			}
+		}
+		return b;
 	}
 	function LatLon(lat,lon){ return new ll(lat||0,lon||0); }
 	function Bounds(a,b){ return new bound(a||LatLon(),b||LatLon()); }
@@ -328,12 +390,19 @@
 			min = bounds.nw.toTile(z);
 			max = bounds.se.toTile(z);
 			urls = [];
+			var limit = LimitBounds(this,bounds);
+			var limitmin = limit.nw.toTile(z);
+			var limitmax = limit.se.toTile(z);
 			if(z<=this._attr.maxZoom && z>=(this._attr.minZoom||1)){
 				for(x = min.xint; x <= max.xint; x++){
 					if(subs > 0) s = x%subs;
 					for(y = min.yint; y <= max.yint; y++){
-						turl = this._url.replace(/\{z\}/g,z).replace(/\{y\}/g,y).replace(/\{x\}/g,x).replace(/\{r\}/g,(window.devicePixelRatio > 1 ? '@2x':''));
-						if(subs > 0) turl = turl.replace(/\{s\}/g,this._attr.subdomains[s]);
+						if(x < limitmin.xint || x > limitmax.xint || y < limitmin.yint || y > limitmax.yint){
+							turl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E";
+						}else{
+							turl = this._url.replace(/\{z\}/g,z).replace(/\{y\}/g,y).replace(/\{x\}/g,x).replace(/\{r\}/g,(window.devicePixelRatio > 1 ? '@2x':''));
+							if(subs > 0) turl = turl.replace(/\{s\}/g,this._attr.subdomains[s]);
+						}
 						urls.push({'url':turl,z:z,'tile':Tile(x,y)});
 					}
 				}
@@ -354,6 +423,7 @@
 			if(typeof fn==="function"){
 				el.forEach(function(elem){
 					elem.addEventListener(ev,function(e){
+						e.preventDefault(); e.stopPropagation(); 
 						e.data = attr;
 						fn.call(attr['this']||this,e);
 					});
