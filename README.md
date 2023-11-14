@@ -24,17 +24,7 @@ where `<DOM>` is the DOM element to attach the map to. Options include:
 * `attributionControl` - show/hide the attribution control
 * `scrollWheelZoom` - can control the map with the scroll wheel?
 
-You can then add a tile layer using e.g.
-
-```javascript
-OI.map.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd',
-  maxZoom: 20
-}).addTo(map);
-```
-
-The following methods are available:
+The following methods are available for the returned `map` object:
 
 ```javascript
 // set the map to contain the given geographical bounds with the maximum zoom level possible
@@ -61,6 +51,24 @@ map.zoomOut(2);
 // pan the map from the centre
 map.panBy({'x':5,'y':10},{'animate':true,'duration':1});
 ```
+
+You can then add a tile layer using e.g.
+
+```javascript
+OI.map.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 20
+}).addTo(map);
+```
+
+A `tileLayer` has the following options:
+
+* `subdomains`
+* `maxZoom`
+* `minZoom`
+* `attribution` - text string to attribute the tiles
+* `bounds` - set the map tile bounds `{'nw':{'lat':54,'lon':-1.8},'se':{'lat':53,'lon':-1.6}}`
 
 ## Plugins
 

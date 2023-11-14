@@ -7,6 +7,7 @@
     - Stop zoom buttons propagating events
     - Add events with .on()
     - Add .setCenter() function to centre the map
+    - bug fixes for boundary/limits
   0.1.8:
     - Limit to minZoom/maxZoom set in tile tile layers
 	- Add .getBounds() to Layer
