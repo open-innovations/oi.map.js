@@ -25,7 +25,7 @@
 	if(OI.map){
 		var ns = 'http://www.w3.org/2000/svg';
 		OI.map.prototype.register('overlay',{
-			'version':'0.1.4',
+			'version':'0.1.6',
 			'exec':function(_map){
 				function Thing(feature,m){
 					this.bindPopup = function(txt){
